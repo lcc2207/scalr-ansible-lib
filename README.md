@@ -1,3 +1,6 @@
+## Example playbook
+
+```yaml
 - hosts: localhost
   gather_facts: no
   tasks:
@@ -15,3 +18,4 @@
         # action: 'terminate-farm'
       register: result
     - debug: var=result
+```
