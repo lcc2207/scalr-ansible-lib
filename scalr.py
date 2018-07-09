@@ -6,14 +6,14 @@ import base64
 import hmac
 import datetime
 import logging
-import pytz
-import requests
 import urllib
 import hashlib
 import os
-import collections
-import json
-import yaml
+# import collections
+# import json
+import requests
+# import yaml
+import pytz
 
 from ansible.module_utils.basic import *
 
@@ -207,15 +207,58 @@ def farms(url, client, stepaction, envid, farmname, projectid):
 
     return data
 
+def farm_role(url, client, stepaction, farmrolename, cloud_region, cloud, instanceType, awsvpc, awssubnet, role_name, cloud_feat_role, aws_sg, baseurl):
+    body = {
+    	"alias": farmrolename,
+    	"role": {
+    		"name": role_name,
+    		"deprecated": {},
+    		"id": 1
+    	},
+    	"cloudPlatform": cloud,
+    	"cloudLocation":cloud_region,
+    	"instanceType": {
+    		"id": instanceType
+    	},
+    	"networking": {
+    		"networks": [{
+    			"id": awsvpc
+    		}],
+    		"subnets": [{
+    			"id": awssubnet
+    		}]
+    	},
+    	"cloudFeatures": {
+    		"type": cloud_feat_role,
+    		"ebsOptimized": "false"
+    	},
+    	"security": {
+    		"securityGroups": [{
+    			"id": aws_sg
+    		}]
+    	}
+    }
+
+    data = client.list(url + "?alias=" + farmrolename)
+
+    if len(data) == 1 and stepaction == "delete-farm-role":
+        farmroleid = str(data[0]["id"])
+        delete_url = baseurl + 'farm-roles/' + farmroleid + "/"
+        data = client.delete(delete_url)
+    elif len(data) != 1 and stepaction == "create-farm-role":
+        data = client.post(url, json=body)
+
+    return data
+
 def main():
     module = AnsibleModule(
         argument_spec = dict(
-            scalr_url         = dict(required=True, type='str'),
+            scalr_url         = dict(required=False, type='str'),
             scope             = dict(required=False, type='str', default='environment'),
             accountid         = dict(required=False, type='str', default='0'),
             envid             = dict(required=False, type='str', default='0'),
-            key_id            = dict(required=True, type='str'),
-            key_secret        = dict(required=True, type='str'),
+            key_id            = dict(required=False, type='str'),
+            key_secret        = dict(required=False, type='str'),
             scalragentinstalled = dict(required=False, type='str'),
             role_name         = dict(required=False, type='str'),
             scalr_os_type     = dict(required=False, type='str'),
@@ -228,12 +271,30 @@ def main():
             img_depricated    = dict(required=False, type='str', default='false'),
             farmname          = dict(required=False, type='str'),
             projectid         = dict(required=False, type='str'),
+            instanceType      = dict(required=False, type='str'),
+            farmrolename      = dict(required=False, type='str'),
+            awsvpc            = dict(required=False, type='str'),
+            awssubnet         = dict(required=False, type='str'),
+            farmid            = dict(required=False, type='str'),
+            aws_sg            = dict(required=False, type='str'),
             )
         )
 
-    url = module.params['scalr_url']
-    key_id = module.params['key_id']
-    key_secret = module.params['key_secret']
+    try:
+        url = module.params['scalr_url'] or os.environ['scalr_url']
+    except KeyError as e:
+        module.fail_json(msg='Unable to load %s' % e.message)
+
+    try:
+        key_id = module.params['key_id'] or os.environ['key_id']
+    except KeyError as e:
+        module.fail_json(msg='Unable to load %s' % e.message)
+
+    try:
+        key_secret = module.params['key_secret'] or os.environ['key_secret']
+    except KeyError as e:
+        module.fail_json(msg='Unable to load %s' % e.message)
+
     action = module.params['action']
     envid = module.params['envid']
     scope = module.params['scope']
@@ -249,9 +310,16 @@ def main():
     img_depricated = module.params['img_depricated']
     farmname = module.params['farmname']
     projectid = module.params['projectid']
+    instanceType = module.params['instanceType']
+    farmrolename = module.params['farmrolename']
+    awsvpc = module.params['awsvpc']
+    awssubnet = module.params['awssubnet']
+    farmid = module.params['farmid']
+    aws_sg = module.params['aws_sg']
 
     if cloud == "ec2":
         cloud_feat_type = "AwsImageCloudFeatures"
+        cloud_feat_role = "AwsCloudFeatures"
     else:
         cloud_feat_type = "ImageCloudFeatures"
 
@@ -280,7 +348,12 @@ def main():
     elif (action == "create-farm") or (action == "delete-farm") or (action == "launch-farm") or (action == "terminate-farm"):
         url = url + 'farms/'
         r = farms(url, client, action, envid, farmname, projectid)
-
+    elif (action == "create-farm-role") or (action == "delete-farm-role"):
+        baseurl = url
+        url = url + 'farms/{farmId}/farm-roles/'
+        params = {'farmId': farmid}
+        url = url.format(**params)
+        r = farm_role(url, client, action, farmrolename, cloud_region, cloud, instanceType, awsvpc, awssubnet, role_name, cloud_feat_role, aws_sg, baseurl)
 
     response = {"output": r }
     module.exit_json(changed=False, meta=response)
