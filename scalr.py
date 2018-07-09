@@ -124,14 +124,12 @@ def image(url, client, stepaction, scope, envid, accountid, image_name, cloud_im
         }
 
     data = client.list(url + "?name=" + image_name)
-    if len(data) == 1:
-        if stepaction == "delete-image":
-            imgid = data[0]["id"]
-            delete_url = url + imgid
-            data = client.delete(delete_url)
-    elif len(data) != 1:
-        if stepaction == "create-image":
-            data = client.post(url, json=body)
+    if (len(data) == 1) and (stepaction == "delete-image"):
+        imgid = data[0]["id"]
+        delete_url = url + imgid
+        data = client.delete(delete_url)
+    elif (len(data) != 1) and (stepaction == "create-image"):
+        data = client.post(url, json=body)
 
     return data
 
@@ -153,14 +151,12 @@ def role(url, client, stepaction, scope, envid, accountid, role_name, scalragent
             }
 
     data = client.list(url + "?name=" + role_name)
-    if len(data) == 1:
-        if stepaction == "delete-role":
-            roleid = str(data[0]["id"])
-            delete_url = url + roleid
-            data = client.delete(delete_url)
-    elif len(data) != 1:
-        if stepaction == "create-role":
-            data = client.post(url, json=body)
+    if (len(data) == 1) and (stepaction == "delete-role"):
+        roleid = str(data[0]["id"])
+        delete_url = url + roleid
+        data = client.delete(delete_url)
+    elif (len(data) != 1) and (stepaction == "create-role"):
+        data = client.post(url, json=body)
 
     return data
 
