@@ -141,13 +141,13 @@ def role(url, client, stepaction, scope, envid, accountid, role_name, scalragent
               "category": {
                 "id": 1
               },
-              "description": "deleteme",
-              "name": "deleteme",
+              "description": role_name,
+              "name": role_name,
               "os": {
-                "id": "ubuntu-16-04"
+                "id": scalr_os_type
               },
               "quickStart": 'false',
-              "useScalrAgent": 'true'
+              "useScalrAgent": scalragentinstalled
             }
 
     data = client.list(url + "?name=" + role_name)
