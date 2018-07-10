@@ -4,6 +4,21 @@ How to use this library:
 
 In your playbook folder create a new folder name "library", copy "scarl.py" in to the library folder.
 
+# Prequistes:
+PIP installed locally
+
+# Python requirements
+pip install pytz
+
+# Environment variables required:
+key_id
+key_secret
+scalr_url
+
+# Example run:
+ansible-playbook -i localhost scalr.yml -e 'ansible_python_interpreter=/usr/local/bin/python3'
+
+
 Playbook Operations:
 
 # Roles
