@@ -1,5 +1,9 @@
 ## Example playbook
 
+How to use this library:
+
+In your playbook folder create a new folder name "library", copy "scarl.py" in to the library folder.
+
 Playbook Operations:
 
 # Roles
