@@ -160,20 +160,31 @@ def role(url, client, stepaction, scope, envid, accountid, role_name, scalragent
 
     return data
 
-def role_img(url, client, stepaction, scope, envid, accountid, role_name, scalragentinstalled, image_name):
-    data = client.list(url + "?name=" + role_name)
-    # get image id
-    # get role name
+def role_img(url, client, stepaction, scope, envid, accountid, role_name, scalragentinstalled, scalr_os_type, image_name):
+    data = client.list(url + "roles/?name=" + role_name)
+    roleid = str(data[0]["id"])
+    imageinfo = client.list(url + "images/?name=" + image_name)
+    imageid = str(imageinfo[0]["id"])
+
     body = { "image": {
-                "id": "dfa36edd-5352-4772-9ab0-f8898c0040f6"
+                "id": imageid
               },
               "role": {
-                "id": "96597"
+                "id": roleid
               }
             }
-    # url = '/api/v1beta0/user/6/roles/96597/images/dfa36edd-5352-4772-9ab0-f8898c0040f6/actions/replace/'
-    # url = '/api/v1beta0/user/6/roles/96597/images/'
-    # data = client.post(url, json=body)
+
+    url = url + "roles/" + roleid + "/images/" #+ imageid + "/actions/replace/"
+
+    data = client.list(url)
+
+    if (len(data) == 1):
+        imgdata = str(data[0]["image"]["id"])
+        if imgdata == imageid:
+            data = "ok"
+    else:
+        data = client.post(url, json=body)
+
     return data
 
 def farms(url, client, stepaction, envid, farmname, projectid):
@@ -337,7 +348,7 @@ def main():
         url = url + 'roles/'
         r = role(url, client, action, scope, envid, accountid, role_name, scalragentinstalled, scalr_os_type)
     elif action == "role-add-image":
-        r = role_img(client, action, scope, envid, accountid, role_name, scalragentinstalled, scalr_os_type)
+        r = role_img(url, client, action, scope, envid, accountid, role_name, scalragentinstalled, scalr_os_type, image_name)
     elif (action == "create-image") or (action == "delete-image"):
         url = url + 'images/'
         r = image(url, client, action, scope, envid, accountid, image_name, cloud_img_id, cloud_region, cloud, scalragentinstalled, cloud_feat_type, scalr_os_type, cloudinit, img_depricated)
