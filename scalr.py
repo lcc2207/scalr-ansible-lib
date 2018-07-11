@@ -9,15 +9,9 @@ import logging
 import urllib
 import hashlib
 import os
-# import collections
-# import json
 import requests
-# import yaml
 import pytz
-
-from ansible.module_utils.basic import *
-
-logging.basicConfig(level=logging.INFO)
+from ansible.module_utils.basic import AnsibleModule
 
 class ScalrApiClient(object):
     def __init__(self, api_url, key_id, key_secret):
@@ -62,7 +56,6 @@ class ScalrApiSession(requests.Session):
 
         url = urllib.parse.urlparse(request.url)
 
-        # TODO - Spec isn't clear on whether the sorting should happen prior or after encoding
         if url.query:
             pairs = urllib.parse.parse_qsl(url.query, keep_blank_values=True, strict_parsing=True)
             pairs = [list(map(urllib.parse.quote, pair)) for pair in pairs]
@@ -187,7 +180,7 @@ def role_img(url, client, stepaction, scope, envid, accountid, role_name, scalra
 
     return data
 
-def farms(url, client, stepaction, envid, farmname, projectid):
+def farms(url, client, stepaction, farmname, projectid):
     body = {
       "name": farmname,
       "project": {
@@ -257,50 +250,54 @@ def farm_role(url, client, stepaction, farmrolename, cloud_region, cloud, instan
 
     return data
 
+def getfarmid(url, client, farmname):
+    url = url + 'farms/'
+    data = client.list(url + "?name=" + farmname)
+    return data
+
 def main():
     module = AnsibleModule(
-        argument_spec = dict(
-            scalr_url         = dict(required=False, type='str'),
-            scope             = dict(required=False, type='str', default='environment'),
-            accountid         = dict(required=False, type='str', default='0'),
-            envid             = dict(required=False, type='str', default='0'),
-            key_id            = dict(required=False, type='str'),
-            key_secret        = dict(required=False, type='str'),
-            scalragentinstalled = dict(required=False, type='str'),
-            role_name         = dict(required=False, type='str'),
-            scalr_os_type     = dict(required=False, type='str'),
-            action            = dict(required=True, type='str'),
-            image_name        = dict(required=False, type='str'),
-            cloud_region      = dict(required=False, type='str'),
-            cloud             = dict(required=False, type='str'),
-            cloud_img_id      = dict(required=False, type='str'),
-            cloudinit         = dict(required=False, type='str'),
-            img_depricated    = dict(required=False, type='str', default='false'),
-            farmname          = dict(required=False, type='str'),
-            projectid         = dict(required=False, type='str'),
-            instanceType      = dict(required=False, type='str'),
-            farmrolename      = dict(required=False, type='str'),
-            awsvpc            = dict(required=False, type='str'),
-            awssubnet         = dict(required=False, type='str'),
-            farmid            = dict(required=False, type='str'),
-            aws_sg            = dict(required=False, type='str'),
+        argument_spec=dict(
+            scalr_url=dict(required=False, type='str'),
+            scope=dict(required=False, type='str', default='environment'),
+            accountid=dict(required=False, type='str', default='0'),
+            envid=dict(required=False, type='str', default='0'),
+            key_id=dict(required=False, type='str'),
+            key_secret=dict(required=False, type='str'),
+            scalragentinstalled=dict(required=False, type='str'),
+            role_name=dict(required=False, type='str'),
+            scalr_os_type=dict(required=False, type='str'),
+            action=dict(required=True, type='str'),
+            image_name=dict(required=False, type='str'),
+            cloud_region=dict(required=False, type='str'),
+            cloud=dict(required=False, type='str'),
+            cloud_img_id=dict(required=False, type='str'),
+            cloudinit=dict(required=False, type='str'),
+            img_depricated=dict(required=False, type='str', default='false'),
+            farmname=dict(required=False, type='str'),
+            projectid=dict(required=False, type='str'),
+            instanceType=dict(required=False, type='str'),
+            farmrolename=dict(required=False, type='str'),
+            awsvpc=dict(required=False, type='str'),
+            awssubnet=dict(required=False, type='str'),
+            aws_sg=dict(required=False, type='str'),
             )
         )
 
     try:
         url = module.params['scalr_url'] or os.environ['scalr_url']
-    except KeyError as e:
-        module.fail_json(msg='Unable to load %s' % e.message)
+    except KeyError as err:
+        module.fail_json(msg='Unable to load %s' % err.message)
 
     try:
         key_id = module.params['key_id'] or os.environ['key_id']
-    except KeyError as e:
-        module.fail_json(msg='Unable to load %s' % e.message)
+    except KeyError as err:
+        module.fail_json(msg='Unable to load %s' % err.message)
 
     try:
         key_secret = module.params['key_secret'] or os.environ['key_secret']
-    except KeyError as e:
-        module.fail_json(msg='Unable to load %s' % e.message)
+    except KeyError as err:
+        module.fail_json(msg='Unable to load %s' % err.message)
 
     action = module.params['action']
     envid = module.params['envid']
@@ -321,7 +318,6 @@ def main():
     farmrolename = module.params['farmrolename']
     awsvpc = module.params['awsvpc']
     awssubnet = module.params['awssubnet']
-    farmid = module.params['farmid']
     aws_sg = module.params['aws_sg']
 
     if cloud == "ec2":
@@ -346,23 +342,24 @@ def main():
 
     if (action == "create-role") or (action == "delete-role"):
         url = url + 'roles/'
-        r = role(url, client, action, scope, envid, accountid, role_name, scalragentinstalled, scalr_os_type)
+        res = role(url, client, action, scope, envid, accountid, role_name, scalragentinstalled, scalr_os_type)
     elif action == "role-add-image":
-        r = role_img(url, client, action, scope, envid, accountid, role_name, scalragentinstalled, scalr_os_type, image_name)
+        res = role_img(url, client, action, scope, envid, accountid, role_name, scalragentinstalled, scalr_os_type, image_name)
     elif (action == "create-image") or (action == "delete-image"):
         url = url + 'images/'
-        r = image(url, client, action, scope, envid, accountid, image_name, cloud_img_id, cloud_region, cloud, scalragentinstalled, cloud_feat_type, scalr_os_type, cloudinit, img_depricated)
+        res = image(url, client, action, scope, envid, accountid, image_name, cloud_img_id, cloud_region, cloud, scalragentinstalled, cloud_feat_type, scalr_os_type, cloudinit, img_depricated)
     elif (action == "create-farm") or (action == "delete-farm") or (action == "launch-farm") or (action == "terminate-farm"):
         url = url + 'farms/'
-        r = farms(url, client, action, envid, farmname, projectid)
+        res = farms(url, client, action, farmname, projectid)
     elif (action == "create-farm-role") or (action == "delete-farm-role"):
+        farmid = getfarmid(url, client, farmname)
         baseurl = url
         url = url + 'farms/{farmId}/farm-roles/'
-        params = {'farmId': farmid}
+        params = {'farmId': str(farmid[0]["id"])}
         url = url.format(**params)
-        r = farm_role(url, client, action, farmrolename, cloud_region, cloud, instanceType, awsvpc, awssubnet, role_name, cloud_feat_role, aws_sg, baseurl)
+        res = farm_role(url, client, action, farmrolename, cloud_region, cloud, instanceType, awsvpc, awssubnet, role_name, cloud_feat_role, aws_sg, baseurl)
 
-    response = {"output": r }
+    response = {"output": res}
     module.exit_json(changed=False, meta=response)
 
 
