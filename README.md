@@ -16,8 +16,7 @@ key_secret
 scalr_url
 
 # Example run:
-ansible-playbook -i localhost scalr.yml -e 'ansible_python_interpreter=/usr/local/bin/python3'
-
+ansible-playbook -i localhost scalr.yml -e 'scalr_url=https://demo.scalr.com key_id=xxxxxx key_secret=xxxx'
 
 Playbook Operations:
 
