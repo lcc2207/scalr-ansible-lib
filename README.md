@@ -12,7 +12,9 @@ pip install pytz
 
 # Environment variables required:
 key_id
+
 key_secret
+
 scalr_url
 
 # Example run:
