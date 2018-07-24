@@ -29,12 +29,27 @@ Actions:
 
 Ex) to Create a role
 ```yaml
-- hosts: localhost
+---
+- hosts: all
   gather_facts: no
+  vars:
+    scalr_url:
+    key_id:
+    key_secret:
   tasks:
+    - package: name={{item}}
+      with_items:
+        - python3-pip
+    - pip: name={{item}} state=latest
+      with_items:
+        - requests
+        - pytz
     - name: Scalr Ceate Farm Role
       scalr:
         envid: 1
+        key_id: "{{ key_id }}"
+        key_secret: "{{ key_secret }}"
+        scalr_url: "{{ scalr_url }}"
         scope: 'environment'
         scalragentinstalled: 'true'
         role_name: 'testrole'
