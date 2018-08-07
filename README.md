@@ -180,7 +180,7 @@ Ex) Create Farm Role.
       register: result
     - debug: var=result
 ```
-Example teample for Farm-roles
+Example template for Farm-roles
 ```json
 {
     "alias": "{{ item.farmrolename }}",
