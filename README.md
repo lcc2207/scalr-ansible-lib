@@ -161,22 +161,56 @@ Actions:
 - create-farm-role
 - delete-farm-role
 
-Ex) Create Farm Role
+Ex) Create Farm Role.
+
+***Note*** to add flexiblity
 
 ```yaml
+    - template: src="./templates/farm_role.json" dest="./test_role.json"
+      with_items:
+        - { farmrolename: test-role, role_name: docker-centos7, role_id: 1, cloud: ec2, cloud_region: us-east-1, instanceType: t2.small, network_id: vpc-xxx, awssubnet: subnet-6xxx, cloud_feat_role: AwsCloudFeatures, aws_sg: sg-xxxx }
     - name: Scalr Ceate FarmRole
       scalr:
-        envid: 1
-        farmid: 1
+        farmname: 'vmware-test1'
+        envid: 6
         farmrolename: test-role
-        cloud: 'ec2'
-        cloud_region: 'us-east-1'
-        instanceType: t2.medium
-        awsvpc: vpc-xxxx
-        awssubnet: subnet-xxxx
-        aws_sg: sg-xxxx
-        role_name: testrole
-        action: 'create-farm-role'
+        farm_role_template: ./junk.json
+        # action: 'create-farm-role'
+        action: 'delete-farm-role'
       register: result
     - debug: var=result
+```
+Example teample for Farm-roles
+```json
+{
+    "alias": "{{ item.farmrolename }}",
+    "role": {
+      "name": "{{ item.role_name }}",
+      "deprecated": {},
+      "id": "{{ item.role_id }}"
+    },
+    "cloudPlatform": "{{ item.cloud }}",
+    "cloudLocation":"{{ item.cloud_region }}",
+    "instanceType": {
+      "id": "{{ item.instanceType }}"
+    },
+    "networking": {
+      "networks": [{
+        "id": "{{ item.network_id }}"
+      }],
+      "subnets": [{
+        "id": "{{ item.awssubnet }}"
+      }]
+    },
+    "cloudFeatures": {
+      "type": "{{ item.cloud_feat_role }}",
+      "ebsOptimized": "false"
+    },
+    "security": {
+      "securityGroups": [{
+        "id": "{{ item.aws_sg }}"
+      }]
+    }
+}
+
 ```
