@@ -11,6 +11,7 @@ import hashlib
 import os
 import requests
 import pytz
+import json
 from ansible.module_utils.basic import AnsibleModule
 
 class ScalrApiClient(object):
@@ -207,37 +208,8 @@ def farms(url, client, stepaction, farmname, projectid):
 
     return data
 
-def farm_role(url, client, stepaction, farmrolename, cloud_region, cloud, instanceType, awsvpc, awssubnet, role_name, cloud_feat_role, aws_sg, baseurl):
-    body = {
-    	"alias": farmrolename,
-    	"role": {
-    		"name": role_name,
-    		"deprecated": {},
-    		"id": 1
-    	},
-    	"cloudPlatform": cloud,
-    	"cloudLocation":cloud_region,
-    	"instanceType": {
-    		"id": instanceType
-    	},
-    	"networking": {
-    		"networks": [{
-    			"id": awsvpc
-    		}],
-    		"subnets": [{
-    			"id": awssubnet
-    		}]
-    	},
-    	"cloudFeatures": {
-    		"type": cloud_feat_role,
-    		"ebsOptimized": "false"
-    	},
-    	"security": {
-    		"securityGroups": [{
-    			"id": aws_sg
-    		}]
-    	}
-    }
+def farm_role(url, client, stepaction, farmrolename, baseurl, farm_role_template):
+    body = json.loads(open(farm_role_template, 'r').read())
 
     data = client.list(url + "?alias=" + farmrolename)
 
@@ -278,9 +250,10 @@ def main():
             projectid=dict(required=False, type='str'),
             instanceType=dict(required=False, type='str'),
             farmrolename=dict(required=False, type='str'),
-            awsvpc=dict(required=False, type='str'),
+            network_id=dict(required=False, type='str'),
             awssubnet=dict(required=False, type='str'),
             aws_sg=dict(required=False, type='str'),
+            farm_role_template=dict(required=False, type='str'),
             )
         )
 
@@ -316,9 +289,10 @@ def main():
     projectid = module.params['projectid']
     instanceType = module.params['instanceType']
     farmrolename = module.params['farmrolename']
-    awsvpc = module.params['awsvpc']
+    network_id = module.params['network_id']
     awssubnet = module.params['awssubnet']
     aws_sg = module.params['aws_sg']
+    farm_role_template = module.params['farm_role_template']
 
     if cloud == "ec2":
         cloud_feat_type = "AwsImageCloudFeatures"
@@ -357,7 +331,7 @@ def main():
         url = url + 'farms/{farmId}/farm-roles/'
         params = {'farmId': str(farmid[0]["id"])}
         url = url.format(**params)
-        res = farm_role(url, client, action, farmrolename, cloud_region, cloud, instanceType, awsvpc, awssubnet, role_name, cloud_feat_role, aws_sg, baseurl)
+        res = farm_role(url, client, action, farmrolename, baseurl, farm_role_template)
 
     response = {"output": res}
     module.exit_json(changed=False, meta=response)
